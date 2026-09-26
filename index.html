@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>HEIST: SHADOW RUN</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="HEIST: SHADOW RUN — a stealth heist game with an adaptive police AI that learns how you play.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ LOADING SCREEN ============ -->
+<div id="loading-screen" class="screen">
+  <div class="loading-wrap">
+    <div class="loading-mark">SR</div>
+    <div class="loading-title">SHADOW RUN</div>
+    <div class="loading-bar"><div class="loading-bar-fill" id="loadingBarFill"></div></div>
+    <div class="loading-status" id="loadingStatus">BOOTING CITY GRID…</div>
+  </div>
+</div>
+
+<!-- ============ MAIN MENU ============ -->
+<div id="main-menu" class="screen hidden">
+  <canvas id="menuParticles"></canvas>
+  <div class="menu-layout">
+    <div class="menu-hero">
+      <div class="menu-eyebrow">EVOX PROTOTYPE // CASE FILE 07</div>
+      <h1 class="menu-title">HEIST<span class="menu-title-sub">SHADOW RUN</span></h1>
+      <p class="menu-tagline">Outrun the law. Outsmart the system.</p>
+      <div class="menu-buttons">
+        <button class="btn btn-primary" id="btnStart"><span class="btn-glyph">▶</span> START HEIST</button>
+        <button class="btn btn-ghost" id="btnHowTo"><span class="btn-glyph">◈</span> HOW TO PLAY</button>
+        <button class="btn btn-ghost" id="btnSettings"><span class="btn-glyph">⚙</span> SETTINGS</button>
+        <button class="btn btn-ghost" id="btnLeaderboard"><span class="btn-glyph">🏆</span> LEADERBOARD</button>
+      </div>
+    </div>
+    <aside class="ops-panel">
+      <div class="ops-panel-title">CITY OPS TERMINAL</div>
+      <div class="ops-row"><span class="ops-dot dot-online"></span>POLICE NETWORK<span class="ops-val">ONLINE</span></div>
+      <div class="ops-row"><span class="ops-dot dot-active"></span>AI PREDICTION<span class="ops-val">ACTIVE</span></div>
+      <div class="ops-row"><span class="ops-dot dot-ready"></span>CITY STATUS<span class="ops-val">LOCKDOWN READY</span></div>
+      <div class="ops-divider"></div>
+      <div class="ops-stat"><span>BEST ESCAPE</span><b id="opsBestEscape">--:--</b></div>
+      <div class="ops-stat"><span>HEISTS RUN</span><b id="opsTotalRuns">0</b></div>
+      <div class="ops-stat"><span>SUCCESS RATE</span><b id="opsWinRate">0%</b></div>
+      <div class="ops-divider"></div>
+      <p class="ops-note">The police AI is a simulated behavior-learning system built in plain JavaScript — no external services, no real ML models.</p>
+    </aside>
+  </div>
+</div>
+
+<!-- ============ MODE SELECT ============ -->
+<div id="mode-select" class="screen overlay hidden">
+  <div class="panel panel-wide">
+    <div class="panel-header"><h2>SELECT OPERATION</h2><button class="icon-btn" data-close="mode-select">✕</button></div>
+    <div class="mode-grid">
+      <button class="mode-card" data-mode="aihunt">
+        <div class="mode-card-tag">FLAGSHIP MODE</div>
+        <div class="mode-card-title">AI HUNT</div>
+        <p>The full adaptive system. Police build a live profile of your habits and hunt smarter the longer you run.</p>
+        <ul><li>3 patrol units, learning enabled</li><li>Target: $5,000</li><li>6:00 on the clock</li></ul>
+      </button>
+      <button class="mode-card" data-mode="classic">
+        <div class="mode-card-tag">STANDARD</div>
+        <div class="mode-card-title">CLASSIC HEIST</div>
+        <p>Collect the loot and get out. Police adapt slowly — a fair fight for a first run.</p>
+        <ul><li>2 patrol units, mild learning</li><li>Target: $5,000</li><li>No hard timer (8:00 soft limit)</li></ul>
+      </button>
+      <button class="mode-card" data-mode="timerush">
+        <div class="mode-card-tag">SPEED</div>
+        <div class="mode-card-title">TIME RUSH</div>
+        <p>A shorter clock and a lower target — get in, grab what you can, get out fast.</p>
+        <ul><li>3 patrol units, fast learning</li><li>Target: $3,500</li><li>3:00 on the clock</li></ul>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HOW TO PLAY ============ -->
+<div id="howto-modal" class="screen overlay hidden">
+  <div class="panel">
+    <div class="panel-header"><h2>HOW TO PLAY</h2><button class="icon-btn" data-close="howto-modal">✕</button></div>
+    <div class="howto-list">
+      <div class="howto-item"><b>01 · MOVE</b><span>WASD or Arrow Keys. On mobile, drag the left stick.</span></div>
+      <div class="howto-item"><b>02 · COLLECT LOOT</b><span>Walk onto loot markers to grab them. Reach the target amount.</span></div>
+      <div class="howto-item"><b>03 · AVOID CAMERAS</b><span>Rotating cones spot you at range. Time your crossings.</span></div>
+      <div class="howto-item"><b>04 · HIDE</b><span>Duck into alley/dumpster zones to drop off police radar — but reused hideouts get learned.</span></div>
+      <div class="howto-item"><b>05 · DISTRACT</b><span>Throw a diversion to pull nearby police away from you. Has a cooldown.</span></div>
+      <div class="howto-item"><b>06 · ESCAPE</b><span>Once you've hit the loot target, run to the green extraction zone.</span></div>
+      <div class="howto-item howto-highlight"><b>⚠ THE POLICE LEARNS</b><span>Repeat a route, a hideout, or a direction too often and the AI adaptation meter climbs — police start predicting you.</span></div>
+    </div>
+    <button class="btn btn-primary btn-block" data-close="howto-modal">GOT IT</button>
+  </div>
+</div>
+
+<!-- ============ SETTINGS ============ -->
+<div id="settings-modal" class="screen overlay hidden">
+  <div class="panel">
+    <div class="panel-header"><h2>SETTINGS</h2><button class="icon-btn" data-close="settings-modal">✕</button></div>
+    <div class="settings-list">
+      <label class="toggle-row"><span>Sound</span><input type="checkbox" id="toggleSound"><span class="toggle-track"></span></label>
+      <label class="toggle-row"><span>Screen Shake</span><input type="checkbox" id="toggleShake"><span class="toggle-track"></span></label>
+      <label class="toggle-row"><span>Reduced Motion</span><input type="checkbox" id="toggleReducedMotion"><span class="toggle-track"></span></label>
+    </div>
+    <button class="btn btn-primary btn-block" data-close="settings-modal">DONE</button>
+  </div>
+</div>
+
+<!-- ============ LEADERBOARD ============ -->
+<div id="leaderboard-modal" class="screen overlay hidden">
+  <div class="panel">
+    <div class="panel-header"><h2>LOCAL LEADERBOARD</h2><button class="icon-btn" data-close="leaderboard-modal">✕</button></div>
+    <p class="modal-subnote">Stored on this device only — no accounts, no server.</p>
+    <div id="leaderboardList" class="leaderboard-list"></div>
+    <button class="btn btn-ghost btn-block" id="btnClearScores">CLEAR LOCAL SCORES</button>
+  </div>
+</div>
+
+<!-- ============ TUTORIAL OVERLAY ============ -->
+<div id="tutorial-overlay" class="screen overlay hidden">
+  <div class="panel panel-narrow">
+    <div class="tutorial-step-count" id="tutorialStepCount">1 / 7</div>
+    <div class="tutorial-icon" id="tutorialIcon">🎮</div>
+    <h3 id="tutorialTitle">Move</h3>
+    <p id="tutorialBody">Use WASD or the Arrow Keys to move through the city. On mobile, drag the stick in the bottom-left.</p>
+    <div class="tutorial-actions">
+      <button class="btn btn-ghost" id="btnSkipTutorial">SKIP TUTORIAL</button>
+      <button class="btn btn-primary" id="btnNextTutorial">NEXT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MISSION BRIEFING ============ -->
+<div id="briefing-overlay" class="screen overlay hidden">
+  <div class="panel panel-narrow">
+    <div class="panel-header"><h2 id="briefingModeTitle">MISSION BRIEFING</h2></div>
+    <div class="briefing-row"><span>OBJECTIVE</span><b id="briefingObjective">Collect $5,000 and reach extraction</b></div>
+    <div class="briefing-row"><span>TIME LIMIT</span><b id="briefingTime">6:00</b></div>
+    <div class="briefing-row"><span>PATROL UNITS</span><b id="briefingUnits">3</b></div>
+    <div class="briefing-row"><span>AI LEARNING</span><b id="briefingLearning">STANDARD</b></div>
+    <p class="modal-subnote">Extraction zone lights up green top-left. Cameras and police both feed the adaptation meter — the longer you take, the smarter they get.</p>
+    <button class="btn btn-primary btn-block" id="btnBeginHeist">BEGIN HEIST</button>
+  </div>
+</div>
+
+<!-- ============ GAME SCREEN ============ -->
+<div id="game-screen" class="screen hidden">
+  <div id="gameStage">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Vignette / danger overlay -->
+    <div id="dangerVignette"></div>
+
+    <!-- HUD: top left -->
+    <div class="hud hud-top-left">
+      <div class="hud-bar-row">
+        <span class="hud-icon">❤</span>
+        <div class="hud-bar"><div class="hud-bar-fill hud-fill-health" id="healthFill"></div></div>
+      </div>
+      <div class="hud-bar-row">
+        <span class="hud-icon">⚡</span>
+        <div class="hud-bar"><div class="hud-bar-fill hud-fill-stamina" id="staminaFill"></div></div>
+      </div>
+    </div>
+
+    <!-- HUD: top center -->
+    <div class="hud hud-top-center">
+      <div class="hud-timer" id="hudTimer">06:00</div>
+      <div class="hud-mode-label" id="hudModeLabel">AI HUNT</div>
+    </div>
+
+    <!-- HUD: top right -->
+    <div class="hud hud-top-right">
+      <div class="hud-mini-row"><span>🚨 ALERT</span><b id="alertState">LOW</b></div>
+      <div class="hud-bar hud-bar-alert"><div class="hud-bar-fill" id="alertFill"></div></div>
+      <div class="hud-mini-row"><span>AI ADAPTATION</span><b id="adaptState">OBSERVING</b></div>
+      <div class="hud-bar hud-bar-adapt"><div class="hud-bar-fill" id="adaptFill"></div></div>
+    </div>
+
+    <!-- HUD: bottom left -->
+    <div class="hud hud-bottom-left">
+      <div class="hud-loot-label">LOOT</div>
+      <div class="hud-loot-value"><span id="lootCollected">$0</span> / <span id="lootTarget">$5,000</span></div>
+      <div class="hud-objective" id="hudObjective">Collect loot, then reach extraction.</div>
+    </div>
+
+    <!-- Minimap -->
+    <div class="hud hud-minimap">
+      <canvas id="minimapCanvas" width="160" height="112"></canvas>
+    </div>
+
+    <!-- HUD: bottom right - abilities (desktop) -->
+    <div class="hud hud-bottom-right" id="abilityBar">
+      <button class="ability-btn" id="btnSprint"><span class="ability-key">SHIFT</span>SPRINT</button>
+      <button class="ability-btn" id="btnHide"><span class="ability-key">E</span>HIDE</button>
+      <button class="ability-btn" id="btnDistract"><span class="ability-key">Q</span>DISTRACT<span class="cooldown-ring" id="distractCooldown"></span></button>
+      <button class="ability-btn ability-btn-escape hidden" id="btnEscapeAction"><span class="ability-key">F</span>ESCAPE</button>
+    </div>
+
+    <!-- Radio ticker -->
+    <div class="hud hud-radio" id="radioTicker"></div>
+
+    <!-- Notifications -->
+    <div class="hud hud-notifications" id="notificationStack"></div>
+
+    <!-- Pause -->
+    <button class="icon-btn hud-pause" id="btnPause">⏸</button>
+
+    <!-- Mobile controls -->
+    <div id="mobileControls">
+      <div id="joystickZone">
+        <div id="joystickBase"><div id="joystickThumb"></div></div>
+      </div>
+      <div id="mobileActionButtons">
+        <button class="ability-btn-m" id="mSprint">SPRINT</button>
+        <button class="ability-btn-m" id="mHide">HIDE</button>
+        <button class="ability-btn-m" id="mDistract">DISTRACT</button>
+        <button class="ability-btn-m ability-btn-escape hidden" id="mEscape">ESCAPE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAUSE OVERLAY ============ -->
+<div id="pause-overlay" class="screen overlay hidden">
+  <div class="panel panel-narrow">
+    <h2>PAUSED</h2>
+    <button class="btn btn-primary btn-block" id="btnResume">RESUME</button>
+    <button class="btn btn-ghost btn-block" id="btnPauseSettings">SETTINGS</button>
+    <button class="btn btn-ghost btn-block" id="btnQuitToMenu">QUIT TO MENU</button>
+  </div>
+</div>
+
+<!-- ============ WIN SCREEN ============ -->
+<div id="win-screen" class="screen overlay hidden">
+  <div class="panel end-panel end-win">
+    <div class="end-rating" id="winRating">S</div>
+    <h2 class="end-title">HEIST COMPLETE</h2>
+    <div class="end-loot" id="winLootTotal">$0 STOLEN</div>
+    <div class="end-stats">
+      <div><span>ESCAPE TIME</span><b id="winEscapeTime">00:00</b></div>
+      <div><span>POLICE ALERT</span><b id="winAlert">0%</b></div>
+      <div><span>AI ADAPTATION</span><b id="winAdapt">0%</b></div>
+      <div><span>ROUTE EFFICIENCY</span><b id="winEfficiency">0%</b></div>
+    </div>
+    <p class="end-quote">"THE POLICE LEARNED YOUR HABITS."</p>
+    <div class="end-buttons">
+      <button class="btn btn-primary" id="btnWinPlayAgain">PLAY AGAIN</button>
+      <button class="btn btn-ghost" id="btnWinMenu">MAIN MENU</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LOSE SCREEN ============ -->
+<div id="lose-screen" class="screen overlay hidden">
+  <div class="panel end-panel end-lose">
+    <h2 class="end-title">MISSION FAILED</h2>
+    <p class="end-quote" id="loseReason">"You were caught."</p>
+    <div class="end-stats">
+      <div><span>TIME SURVIVED</span><b id="loseSurvived">00:00</b></div>
+      <div><span>LOOT COLLECTED</span><b id="loseLoot">$0</b></div>
+      <div><span>AI ADAPTATION</span><b id="loseAdapt">0%</b></div>
+      <div><span>POLICE RESPONSE</span><b id="loseResponse">Standard</b></div>
+    </div>
+    <div class="end-buttons">
+      <button class="btn btn-primary" id="btnLoseRetry">TRY AGAIN</button>
+      <button class="btn btn-ghost" id="btnLoseMenu">MAIN MENU</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
